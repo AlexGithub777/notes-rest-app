@@ -1,120 +1,42 @@
-package handlers
+package main
 
 import (
-	"database/sql"
-	"net/http"
-	"strconv"
-	"time"
-
-	"github.com/labstack/echo/v4"
+	"log"
 
 	"github.com/AlexGithub777/notes-rest-app/internal/db"
-	"github.com/AlexGithub777/notes-rest-app/internal/models"
-	"github.com/AlexGithub777/notes-rest-app/internal/utils"
+	"github.com/AlexGithub777/notes-rest-app/internal/routes"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 )
 
-// GET /notes
-func GetAllNotesHandler(c echo.Context) error {
-	notes, err := db.GetAllNotes()
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+func main() {
+	// Initialize and test database connection
+	if err := db.SetupDB(); err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
 	}
-	return c.JSON(http.StatusOK, notes)
-}
+	defer func() {
+		if err := db.DB.Close(); err != nil {
+			log.Printf("Error closing database: %v", err)
+		}
+	}()
 
-// GET /notes/:id
-func GetNoteByIDHandler(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
-	}
+	// Initialize Echo
+	e := echo.New()
 
-	note, err := db.GetNoteByID(id)
-	if err == sql.ErrNoRows {
-		return utils.JSONError(c, http.StatusNotFound, "Note not found")
-	} else if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch note")
-	}
+	// Middleware
+	e.Use(middleware.Logger())
+	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins: []string{"*"}, // You can restrict origins if needed
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE"},
+	}))
 
-	return c.JSON(http.StatusOK, note)
-}
+	// Setup API routes
+	routes.SetupRoutes(e)
 
-// POST /notes
-func CreateNoteHandler(c echo.Context) error {
-	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
+	// Start server
+	log.Println("🚀 Server running at http://localhost:8080")
+	if err := e.Start(":8080"); err != nil {
+		log.Fatalf("Failed to start server: %v", err)
 	}
-	if err := c.Bind(&input); err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid input")
-	}
-
-	now := time.Now()
-	noteID, err := db.CreateNote(input.Title, input.Content, now)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to create note")
-	}
-
-	note, err := db.GetNoteByID(noteID)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch created note")
-	}
-	return c.JSON(http.StatusCreated, note)
-}
-
-// PUT /notes/:id
-func UpdateNoteHandler(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
-	}
-
-	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-	}
-	if err := c.Bind(&input); err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid input")
-	}
-
-	exists, err := db.NoteExists(id)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to check note existence")
-	}
-	if !exists {
-		return utils.JSONError(c, http.StatusNotFound, "Note not found")
-	}
-
-	now := time.Now()
-	if err := db.UpdateNote(id, input.Title, input.Content, now); err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to update note")
-	}
-
-	note, err := db.GetNoteByID(id)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch updated note")
-	}
-	return c.JSON(http.StatusOK, note)
-}
-
-// DELETE /notes/:id
-func DeleteNoteHandler(c echo.Context) error {
-	id, err := strconv.Atoi(c.Param("id"))
-	if err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
-	}
-
-	exists, err := db.NoteExists(id)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to check note existence")
-	}
-	if !exists {
-		return utils.JSONError(c, http.StatusNotFound, "Note not found")
-	}
-
-	if err := db.DeleteNote(id); err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to delete note")
-	}
-
-	return c.NoContent(http.StatusNoContent)
 }
