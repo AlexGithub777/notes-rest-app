@@ -10,10 +10,20 @@ import (
 
 var DB *sql.DB
 
-// SetupDB initializes the database connection
-func SetupDB() error {
+// Database configuration
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "postgres"
+	dbname   = "notesdb"
+)
 
-	connStr := "user=postgres password=postgres dbname=notesdb sslmode=disable"
+// SetupDB initialises the database connection
+func SetupDB() error {
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
 	var err error
 	DB, err = sql.Open("postgres", connStr)
 	if err != nil {
