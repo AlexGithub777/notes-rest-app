@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v4"
 
 	"github.com/AlexGithub777/notes-rest-app/internal/db"
+	"github.com/AlexGithub777/notes-rest-app/internal/models"
 	"github.com/AlexGithub777/notes-rest-app/internal/utils"
 )
 
@@ -16,9 +17,30 @@ func JSONError(c echo.Context, status int, msg string) error {
 	return c.JSON(status, map[string]string{"error": msg})
 }
 
+// GET /notes/categories
+func GetAllCategoriesHandler(c echo.Context) error {
+
+	categories, err := db.GetAllCategories()
+	if err != nil {
+		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch categories")
+	}
+	return c.JSON(http.StatusOK, categories)
+}
+
 // GET /notes
 func GetAllNotesHandler(c echo.Context) error {
-	notes, err := db.GetAllNotes()
+	// get user id from the cookie
+	cookie, err := c.Cookie("user_id")
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "User not logged in")
+	}
+	userID, err := strconv.Atoi(cookie.Value)
+
+	if err != nil {
+		return utils.JSONError(c, http.StatusBadRequest, "Invalid user ID")
+	}
+	// Fetch all notes for the user
+	notes, err := db.GetAllNotes(userID)
 	if err != nil {
 		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
 	}
@@ -27,12 +49,22 @@ func GetAllNotesHandler(c echo.Context) error {
 
 // GET /notes/:id
 func GetNoteByIDHandler(c echo.Context) error {
+	// get user id from the cookie
+	cookie, err := c.Cookie("user_id")
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "User not logged in")
+	}
+	userID, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return utils.JSONError(c, http.StatusBadRequest, "Invalid user ID")
+	}
+	// Fetch the note by ID
 	id, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
 	}
 
-	note, err := db.GetNoteByID(id)
+	note, err := db.GetNoteByID(userID, id)
 	if err == sql.ErrNoRows {
 		return utils.JSONError(c, http.StatusNotFound, "Note not found")
 	} else if err != nil {
@@ -42,27 +74,40 @@ func GetNoteByIDHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, note)
 }
 
-// POST /notes
+// / POST /notes
 func CreateNoteHandler(c echo.Context) error {
-	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
+	// USE models CREATENOTEREQUEST TYPE
+	noteReq := models.CreateNoteRequest{}
+
+	if err := c.Bind(&noteReq); err != nil {
+		return utils.JSONError(c, http.StatusBadRequest, "Invalid request payload")
 	}
-	if err := c.Bind(&input); err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid input")
+
+	// Check if all required fields are present
+	if noteReq.Title == "" || noteReq.Content == "" || noteReq.CategoryID == 0 {
+		return utils.JSONError(c, http.StatusBadRequest, "Missing required fields")
+	}
+
+	// Retrieve user_id from the cookie
+	cookie, err := c.Cookie("user_id")
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "User not authenticated")
+	}
+
+	// Convert user_id to an integer
+	userID, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "Invalid user ID")
 	}
 
 	now := time.Now()
-	noteID, err := db.CreateNote(input.Title, input.Content, now)
+	// Use the CreateNote function to insert into DB
+	createdNote, err := db.CreateNote(userID, noteReq.Title, noteReq.Content, noteReq.CategoryID, now)
 	if err != nil {
 		return utils.JSONError(c, http.StatusInternalServerError, "Failed to create note")
 	}
 
-	note, err := db.GetNoteByID(noteID)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch created note")
-	}
-	return c.JSON(http.StatusCreated, note)
+	return c.JSON(http.StatusCreated, createdNote)
 }
 
 // PUT /notes/:id
@@ -72,32 +117,37 @@ func UpdateNoteHandler(c echo.Context) error {
 		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
 	}
 
-	var input struct {
-		Title   string `json:"title"`
-		Content string `json:"content"`
-	}
-	if err := c.Bind(&input); err != nil {
-		return utils.JSONError(c, http.StatusBadRequest, "Invalid input")
+	// USE models CREATENOTEREQUEST TYPE
+	editNoteReq := models.UpdateNoteRequest{}
+
+	if err := c.Bind(&editNoteReq); err != nil {
+		return utils.JSONError(c, http.StatusBadRequest, "Invalid request payload")
 	}
 
-	exists, err := db.NoteExists(id)
+	// Check if all required fields are present
+	if editNoteReq.Title == "" || editNoteReq.Content == "" || editNoteReq.CategoryID == 0 {
+		return utils.JSONError(c, http.StatusBadRequest, "Missing required fields")
+	}
+
+	// Retrieve user_id from the cookie
+	cookie, err := c.Cookie("user_id")
 	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to check note existence")
-	}
-	if !exists {
-		return utils.JSONError(c, http.StatusNotFound, "Note not found")
+		return utils.JSONError(c, http.StatusUnauthorized, "User not authenticated")
 	}
 
-	now := time.Now()
-	if err := db.UpdateNote(id, input.Title, input.Content, now); err != nil {
+	// Convert user_id to an integer
+	userID, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "Invalid user ID")
+	}
+
+	// Check if the note exists and belongs to the user
+	updatedNote, err := db.UpdateNote(userID, id, editNoteReq.Title, editNoteReq.Content, editNoteReq.CategoryID, time.Now())
+	if err != nil {
 		return utils.JSONError(c, http.StatusInternalServerError, "Failed to update note")
 	}
 
-	note, err := db.GetNoteByID(id)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch updated note")
-	}
-	return c.JSON(http.StatusOK, note)
+	return c.JSON(http.StatusOK, updatedNote)
 }
 
 // DELETE /notes/:id
@@ -107,15 +157,20 @@ func DeleteNoteHandler(c echo.Context) error {
 		return utils.JSONError(c, http.StatusBadRequest, "Invalid note ID")
 	}
 
-	exists, err := db.NoteExists(id)
+	// Retrieve user_id from the cookie
+	cookie, err := c.Cookie("user_id")
 	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to check note existence")
-	}
-	if !exists {
-		return utils.JSONError(c, http.StatusNotFound, "Note not found")
+		return utils.JSONError(c, http.StatusUnauthorized, "User not authenticated")
 	}
 
-	if err := db.DeleteNote(id); err != nil {
+	// Convert user_id to an integer
+	userID, err := strconv.Atoi(cookie.Value)
+	if err != nil {
+		return utils.JSONError(c, http.StatusUnauthorized, "Invalid user ID")
+	}
+
+	// Delete the note if it exists and belongs to the user
+	if err := db.DeleteNote(userID, id); err != nil {
 		return utils.JSONError(c, http.StatusInternalServerError, "Failed to delete note")
 	}
 
