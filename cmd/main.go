@@ -51,12 +51,17 @@ func main() {
 
 	port := "8080" // Define the port to listen on
 
+	localhost := "localhost" // Define the localhost address
+
 	// HTTP listener is in a goroutine as it's blocking
 	go func() {
-		if err := e.Start(":" + port); err != nil && err != http.ErrServerClosed {
+		if err := e.Start(localhost + ":" + port); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Error starting the server: %v", err)
 		}
 	}()
+
+	// make clickable link
+	log.Printf("Server started at http://%s:%s", localhost, port)
 
 	// Setup a ctrl-c trap to ensure a graceful shutdown
 	c := make(chan os.Signal, 1)

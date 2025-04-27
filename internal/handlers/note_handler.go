@@ -176,3 +176,14 @@ func DeleteNoteHandler(c echo.Context) error {
 
 	return c.NoContent(http.StatusNoContent)
 }
+
+// GET /notes/all
+
+func GetAllNotesForAllUsersHandler(c echo.Context) error {
+	// Fetch all notes for all users
+	notes, err := db.GetAllNotesForAllUsers()
+	if err != nil {
+		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+	}
+	return c.JSON(http.StatusOK, notes)
+}

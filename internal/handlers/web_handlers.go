@@ -13,6 +13,12 @@ func HomeHandler(c echo.Context) error {
 	return c.Render(http.StatusOK, "home.html", nil)
 }
 
+// AllNotesHandler handles the all notes page
+func AllNotesHandler(c echo.Context) error {
+	// Render the all notes page
+	return c.Render(http.StatusOK, "all-notes.html", nil)
+}
+
 // LoginWebHandler handles the login page
 func LoginWebHandler(c echo.Context) error {
 	// Render the login page

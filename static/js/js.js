@@ -5,9 +5,41 @@ document.addEventListener("DOMContentLoaded", function () {
     const API_URL = "/api/notes";
     const CATEGORIES_URL = "/api/notes/categories";
 
+    // check if page is all notes
+    const isAllNotesPage = window.location.pathname === "/all-notes";
+    if (isAllNotesPage) {
+        document.title = "All Notes";
+        // add event listener to my notes button
+        const mynotesbtn = document.getElementById("my-notes-btn");
+        if (mynotesbtn) {
+            mynotesbtn.addEventListener("click", () => {
+                window.location.href = "/home";
+            });
+        }
+
+        // load all notes using /api/notes/all
+        fetch(`${API_URL}/all`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch notes");
+                }
+                return response.json();
+            })
+            .then((notes) => {
+                renderNotes(notes);
+            })
+            .catch((error) => {
+                console.error("Error fetching notes:", error);
+                showAlert("Error fetching notes. Please try again.", "danger");
+            });
+    } else {
+        document.title = "My Notes";
+    }
+
     // DOM elements
     const notesContainer = document.getElementById("notes-container");
     const createNoteBtn = document.getElementById("create-note-btn");
+    const allNotesBtn = document.getElementById("all-notes-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const createNoteModal = new bootstrap.Modal(
         document.getElementById("create-note-modal")
@@ -54,6 +86,12 @@ document.addEventListener("DOMContentLoaded", function () {
     if (logoutBtn) {
         logoutBtn.addEventListener("click", () => {
             window.location.href = "/logout";
+        });
+    }
+
+    if (allNotesBtn) {
+        allNotesBtn.addEventListener("click", () => {
+            window.location.href = "/all-notes";
         });
     }
 

@@ -134,3 +134,27 @@ func getCategoryNameByID(categoryID int) (string, error) {
 	err := DB.QueryRow("SELECT name FROM categories WHERE id = $1", categoryID).Scan(&categoryName)
 	return categoryName, err
 }
+
+// GetAllNotesForAllUsers returns all notes for all users
+func GetAllNotesForAllUsers() ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}

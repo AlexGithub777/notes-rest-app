@@ -16,6 +16,7 @@ func SetupRoutes(e *echo.Echo) {
 	e.GET("/logout", handlers.LoginWebHandler)
 
 	e.GET("/home", handlers.HomeHandler)
+	e.GET("/all-notes", handlers.AllNotesHandler)
 
 	// Api routes
 	e.POST("api/login", handlers.LoginHandler)
@@ -23,9 +24,13 @@ func SetupRoutes(e *echo.Echo) {
 	// group for notes api
 	notes := e.Group("/api/notes")
 	notes.GET("/categories", handlers.GetAllCategoriesHandler)
+	// gets all notes for logged in user
 	notes.GET("", handlers.GetAllNotesHandler)
 	notes.GET("/:id", handlers.GetNoteByIDHandler)
 	notes.POST("", handlers.CreateNoteHandler)
 	notes.PUT("/:id", handlers.UpdateNoteHandler)
 	notes.DELETE("/:id", handlers.DeleteNoteHandler)
+
+	// get all notes for all users
+	notes.GET("/all", handlers.GetAllNotesForAllUsersHandler)
 }
