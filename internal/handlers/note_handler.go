@@ -40,7 +40,7 @@ func GetAllNotesHandler(c echo.Context) error {
 		return utils.JSONError(c, http.StatusBadRequest, "Invalid user ID")
 	}
 	// Fetch all notes for the user
-	notes, err := db.GetAllNotes(userID)
+	notes, err := db.GetNotesForUser(userID)
 	if err != nil {
 		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
 	}

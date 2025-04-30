@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	// Initialize and test database connection
+	// Initialise and test database connection
 	if err := db.SetupDB(); err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}

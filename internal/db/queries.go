@@ -25,7 +25,7 @@ func GetAllCategories() ([]models.Category, error) {
 }
 
 // GetAllNotes returns all notes for the logged-in user
-func GetAllNotes(userID int) ([]models.Note, error) {
+func GetNotesForUser(userID int) ([]models.Note, error) {
 	rows, err := DB.Query(`
 		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
 		FROM notes
