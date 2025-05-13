@@ -17,8 +17,13 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
-        // load all notes using /api/notes/all
-        fetch(`${API_URL}/all`)
+        function fetchAllNotes(query = "") {
+            let url = `${API_URL}/all`;
+            if (query) {
+                url += `?search=${encodeURIComponent(query)}`;
+            }
+        
+            fetch(url)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Failed to fetch notes");
@@ -26,15 +31,31 @@ document.addEventListener("DOMContentLoaded", function () {
                 return response.json();
             })
             .then((notes) => {
+                if (!notes || notes.length === 0) {
+                    showAlert(
+                        "No notes found for your search.",
+                        "warning"
+                    );
+
+                    // Clear the notes container
+                    notesContainer.innerHTML = "";
+
+                    return;
+                }
                 renderNotes(notes);
             })
             .catch((error) => {
                 console.error("Error fetching notes:", error);
                 showAlert("Error fetching notes. Please try again.", "danger");
             });
+        }
+        // Fetch all notes on page load
+        fetchAllNotes();      
     } else {
         document.title = "My Notes";
     }
+
+
 
     // DOM elements
     const notesContainer = document.getElementById("notes-container");
@@ -43,6 +64,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const allNotesBtn = document.getElementById("all-notes-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const logoutBtnAllNotes = document.getElementById("logout-btn-all-notes");
+    const searchInputMyNotes = document.getElementById("search-input-my-notes");
+    let searchQueryMyNotes = "";
+    const searchInputAllNotes = document.getElementById("search-input-all-notes");
+    let searchQueryAllNotes = "";
+
     const createNoteModal = new bootstrap.Modal(
         document.getElementById("create-note-modal")
     );
@@ -122,6 +148,35 @@ document.addEventListener("DOMContentLoaded", function () {
         categoryFilterSelectAllNotes.addEventListener("change", filterByCategoryAllNotes);
     }
 
+    if (searchInputMyNotes) {
+        searchInputMyNotes.addEventListener("input", debounce(() => {
+            searchQueryMyNotes = searchInputMyNotes.value.trim();
+            fetchNotes(searchQueryMyNotes);
+        }, 300));
+    }
+    
+    if (searchInputAllNotes) {
+        searchInputAllNotes.addEventListener("input", debounce(() => {
+            searchQueryAllNotes = searchInputAllNotes.value.trim();
+            fetchAllNotes(searchQueryAllNotes);
+        }, 300));
+    }
+
+    // debounce function – stops function from running too often (e.g. while typing)
+    function debounce(fn, delay) {
+        let timer; // store timeout so we can clear it
+
+        return function (...args) {
+            clearTimeout(timer); // clear previous timer if user types again
+
+            // wait `delay` ms before running the actual function
+            timer = setTimeout(() => {
+                fn.apply(this, args); // run fn with same args and context
+            }, delay);
+        };
+    }
+
+
     // Map category_id to Bootstrap badge classes
     function getCategoryBadgeClass(categoryId) {
         switch (categoryId) {
@@ -197,8 +252,13 @@ function populateCategorySelects(categories) {
 }
  
     // Fetch all notes from API
-    function fetchNotes() {
-        fetch(API_URL)
+    function fetchNotes(query = "") {
+        let url = API_URL;
+        if (query) {
+            url += `?search=${encodeURIComponent(query)}`;
+        }
+    
+        fetch(url)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Failed to fetch notes");
@@ -206,6 +266,17 @@ function populateCategorySelects(categories) {
                 return response.json();
             })
             .then((notes) => {
+                if (!notes || notes.length === 0) {
+                    showAlert(
+                        "No notes found for your search.",
+                        "warning"
+                    );
+
+                    // Clear the notes container
+                    notesContainer.innerHTML = "";
+
+                    return;
+                }
                 renderNotes(notes);
             })
             .catch((error) => {
@@ -213,6 +284,7 @@ function populateCategorySelects(categories) {
                 showAlert("Error fetching notes. Please try again.", "danger");
             });
     }
+    
 
     // Render notes as Bootstrap cards
     function renderNotes(notes) {
@@ -523,7 +595,7 @@ function populateCategorySelects(categories) {
             .catch((error) => {
                 console.error("Error:", error);
                 showAlert(
-                    "No notes found.",
+                    "No notes found for this category.",
                     "warning"
                 );
             });
@@ -550,7 +622,7 @@ function populateCategorySelects(categories) {
             .catch((error) => {
                 console.error("Error:", error);
                 showAlert(
-                    "No notes found.",
+                    "No notes found for this category.",
                     "warning"
                 );
             });
