@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -39,12 +40,60 @@ func GetAllNotesHandler(c echo.Context) error {
 	if err != nil {
 		return utils.JSONError(c, http.StatusBadRequest, "Invalid user ID")
 	}
-	// Fetch all notes for the user
-	notes, err := db.GetNotesForUser(userID)
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+
+	// Check for query params (category-id, search)
+	categoryID := c.QueryParam("category-id")
+	search := c.QueryParam("search")
+
+	// log the query params
+	fmt.Printf("categoryID: %s, search: %s\n", categoryID, search)
+
+	// If categoryID is not empty, convert it to an integer
+	var catID int
+	if categoryID != "" {
+		catID, err = strconv.Atoi(categoryID)
+		if err != nil {
+			return utils.JSONError(c, http.StatusBadRequest, "Invalid category ID")
+		}
 	}
-	return c.JSON(http.StatusOK, notes)
+
+	// If search is not empty, check if it is a valid string
+	if search != "" {
+		if len(search) < 1 {
+			return utils.JSONError(c, http.StatusBadRequest, "Search term must be at least 1 characters long")
+		}
+	}
+
+	// Handle different query parameter combinations
+	if categoryID != "" && search != "" {
+		// Both categoryID and search are provided
+		notes, err := db.GetNotesForUserByCategoryAndSearch(userID, catID, search)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else if categoryID != "" {
+		// Only categoryID is provided
+		notes, err := db.GetNotesForUserByCategory(userID, catID)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else if search != "" {
+		// Only search is provided
+		notes, err := db.GetNotesForUserBySearch(userID, search)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else {
+		// No query parameters, return all notes
+		notes, err := db.GetNotesForUser(userID)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	}
 }
 
 // GET /notes/:id
@@ -178,12 +227,59 @@ func DeleteNoteHandler(c echo.Context) error {
 }
 
 // GET /notes/all
-
 func GetAllNotesForAllUsersHandler(c echo.Context) error {
-	// Fetch all notes for all users
-	notes, err := db.GetAllNotesForAllUsers()
-	if err != nil {
-		return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+	// Check for query params (category-id, search)
+	categoryID := c.QueryParam("category-id")
+	search := c.QueryParam("search")
+
+	// log the query params
+	fmt.Printf("categoryID: %s, search: %s\n", categoryID, search)
+
+	// If categoryID is not empty, convert it to an integer
+	var catID int
+	var err error
+	if categoryID != "" {
+		catID, err = strconv.Atoi(categoryID)
+		if err != nil {
+			return utils.JSONError(c, http.StatusBadRequest, "Invalid category ID")
+		}
 	}
-	return c.JSON(http.StatusOK, notes)
+
+	// If search is not empty, check if it is a valid string
+	if search != "" {
+		if len(search) < 1 {
+			return utils.JSONError(c, http.StatusBadRequest, "Search term must be at least 1 characters long")
+		}
+	}
+
+	// Handle different query parameter combinations
+	if categoryID != "" && search != "" {
+		// Both categoryID and search are provided
+		notes, err := db.GetAllNotesForAllUsersByCategoryAndSearch(catID, search)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else if categoryID != "" {
+		// Only categoryID is provided
+		notes, err := db.GetAllNotesForAllUsersByCategory(catID)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else if search != "" {
+		// Only search is provided
+		notes, err := db.GetAllNotesForAllUsersBySearch(search)
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	} else {
+		// No query parameters, return all notes
+		notes, err := db.GetAllNotesForAllUsers()
+		if err != nil {
+			return utils.JSONError(c, http.StatusInternalServerError, "Failed to fetch notes")
+		}
+		return c.JSON(http.StatusOK, notes)
+	}
 }

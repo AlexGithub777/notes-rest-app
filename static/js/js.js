@@ -39,8 +39,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // DOM elements
     const notesContainer = document.getElementById("notes-container");
     const createNoteBtn = document.getElementById("create-note-btn");
+    const createNoteBtnAllNotes = document.getElementById("create-note-btn-all-notes");
     const allNotesBtn = document.getElementById("all-notes-btn");
     const logoutBtn = document.getElementById("logout-btn");
+    const logoutBtnAllNotes = document.getElementById("logout-btn-all-notes");
     const createNoteModal = new bootstrap.Modal(
         document.getElementById("create-note-modal")
     );
@@ -61,14 +63,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const editNoteCategorySelect =
         document.getElementById("edit-note-category");
 
+    const categoryFilterSelect = document.getElementById("category-filter-my-notes");
+    const categoryFilterSelectAllNotes =
+        document.getElementById("category-filter-all-notes");
+
     // Load notes and categories when page loads
     fetchCategories().then(() => {
-        fetchNotes();
+        if (!isAllNotesPage) {
+            fetchNotes(); // only fetch user notes on /home
+        }
     });
+
 
     // Event listeners
     if (createNoteBtn) {
         createNoteBtn.addEventListener("click", () => createNoteModal.show());
+    }
+
+    if (createNoteBtnAllNotes) {
+        createNoteBtnAllNotes.addEventListener("click", () => createNoteModal.show());
     }
 
     if (createNoteForm) {
@@ -89,10 +102,24 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    if (logoutBtnAllNotes) {
+        logoutBtnAllNotes.addEventListener("click", () => {
+            window.location.href = "/logout";
+        });
+    }
+
     if (allNotesBtn) {
         allNotesBtn.addEventListener("click", () => {
             window.location.href = "/all-notes";
         });
+    }
+
+    if (categoryFilterSelect) {
+        categoryFilterSelect.addEventListener("change", filterByCategory);
+    }
+
+    if (categoryFilterSelectAllNotes) {
+        categoryFilterSelectAllNotes.addEventListener("change", filterByCategoryAllNotes);
     }
 
     // Map category_id to Bootstrap badge classes
@@ -133,31 +160,42 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Populate category select dropdowns
-    function populateCategorySelects(categories) {
-        // Function to populate a select element with categories
-        function populateSelect(selectElement) {
-            if (!selectElement) return;
+function populateCategorySelects(categories) {
+    // Function to populate a select element with categories
+    function populateSelect(selectElement) {
+        if (!selectElement) return;
 
-            // Keep the default "Select a category" option
-            selectElement.innerHTML =
-                '<option value="" disabled selected>Select a category</option>';
-
-            // Add categories from the API
-            categories.forEach((category) => {
-                // convert to integer
-                category.id = parseInt(category.id, 10);
-                const option = document.createElement("option");
-                option.value = category.id;
-                option.textContent = category.name;
-                selectElement.appendChild(option);
-            });
+        // If selectElement is categoryFilterSelect or categoryFilterSelectAllNotes, add "All" option
+        if (selectElement === categoryFilterSelect || selectElement === categoryFilterSelectAllNotes) {
+            const allOption = document.createElement("option");
+            allOption.value = "";
+            allOption.textContent = "All Categories";
+            selectElement.appendChild(allOption);
+        } else {
+            // Set the default value to "Select a category"
+            const defaultOption = document.createElement("option");
+            defaultOption.value = "";
+            defaultOption.textContent = "Select a category";
+            selectElement.appendChild(defaultOption);
         }
 
-        // Populate both create and edit form selects
-        populateSelect(createNoteCategorySelect);
-        populateSelect(editNoteCategorySelect);
+        // Add categories from the API
+        categories.forEach((category) => {
+            category.id = parseInt(category.id, 10); // Ensure ID is an integer
+            const option = document.createElement("option");
+            option.value = category.id;
+            option.textContent = category.name;
+            selectElement.appendChild(option);
+        });
     }
 
+    // Populate select elements
+    populateSelect(createNoteCategorySelect);
+    populateSelect(editNoteCategorySelect);
+    populateSelect(categoryFilterSelect);
+    populateSelect(categoryFilterSelectAllNotes);
+}
+ 
     // Fetch all notes from API
     function fetchNotes() {
         fetch(API_URL)
@@ -463,4 +501,59 @@ document.addEventListener("DOMContentLoaded", function () {
         const date = new Date(dateString);
         return date.toLocaleDateString();
     }
+
+    function filterByCategory() {
+        const categoryId =
+            document.getElementById("category-filter-my-notes").value;
+        const url = categoryId
+            ? `/api/notes?category-id=${categoryId}`
+            : `/api/notes`;
+    
+        fetch(url)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch notes");
+                }
+                return response.json(); // This is the key: expect JSON, not HTML
+                console.log(response);
+            })
+            .then((notes) => {
+                renderNotes(notes); // Use your existing function
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                showAlert(
+                    "No notes found.",
+                    "warning"
+                );
+            });
+    }
+
+    function filterByCategoryAllNotes () {
+        const categoryId =
+            document.getElementById("category-filter-all-notes").value;
+        const url = categoryId
+            ? `/api/notes/all?category-id=${categoryId}`
+            : `/api/notes/all`;
+    
+        fetch(url)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to fetch notes");
+                }
+                return response.json(); // This is the key: expect JSON, not HTML
+            })
+            .then((notes) => {
+                console.log(notes);
+                renderNotes(notes); // Use your existing function
+            })
+            .catch((error) => {
+                console.error("Error:", error);
+                showAlert(
+                    "No notes found.",
+                    "warning"
+                );
+            });
+    }
 });
+

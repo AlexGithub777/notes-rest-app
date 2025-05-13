@@ -50,6 +50,84 @@ func GetNotesForUser(userID int) ([]models.Note, error) {
 	return notes, nil
 }
 
+// GetNotesForUserByCategory returns all notes for the logged-in user filtered by category
+func GetNotesForUserByCategory(userID, categoryID int) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE notes.user_id = $1 AND notes.category = $2
+		ORDER BY notes.created_at DESC
+	`, userID, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
+// GetNotesForUserBySearch returns all notes for the logged-in user filtered by search term
+func GetNotesForUserBySearch(userID int, search string) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE notes.user_id = $1 AND (notes.title ILIKE '%' || $2 || '%' OR notes.content ILIKE '%' || $2 || '%')
+		ORDER BY notes.created_at DESC
+	`, userID, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
+// GetNotesForUserByCategoryAndSearch returns all notes for the logged-in user filtered by category and search term
+func GetNotesForUserByCategoryAndSearch(userID, categoryID int, search string) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE notes.user_id = $1 AND notes.category = $2 AND (notes.title ILIKE '%' || $3 || '%' OR notes.content ILIKE '%' || $3 || '%')
+		ORDER BY notes.created_at DESC
+	`, userID, categoryID, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
 // GetNoteByID returns a specific note for the logged-in user
 func GetNoteByID(userID, noteID int) (models.Note, error) {
 	var note models.Note
@@ -143,6 +221,81 @@ func GetAllNotesForAllUsers() ([]models.Note, error) {
 		LEFT JOIN categories ON notes.category = categories.id
 		LEFT JOIN users ON notes.user_id = users.id
 	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
+// GetAllNotesForAllUsersByCategory returns all notes for all users filtered by category
+func GetAllNotesForAllUsersByCategory(categoryID int) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE notes.category = $1
+	`, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
+// GetAllNotesForAllUsersBySearch returns all notes for all users filtered by search term
+func GetAllNotesForAllUsersBySearch(search string) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE (notes.title ILIKE '%' || $1 || '%' OR notes.content ILIKE '%' || $1 || '%')
+	`, search)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var notes []models.Note
+	for rows.Next() {
+		var note models.Note
+		if err := rows.Scan(&note.ID, &note.Title, &note.Content, &note.CreatedAt, &note.UpdatedAt, &note.CategoryName, &note.CategoryID, &note.Username); err != nil {
+			return nil, err
+		}
+		notes = append(notes, note)
+	}
+	return notes, nil
+}
+
+// GetAllNotesForAllUsersByCategoryAndSearch returns all notes for all users filtered by category and search term
+func GetAllNotesForAllUsersByCategoryAndSearch(categoryID int, search string) ([]models.Note, error) {
+	rows, err := DB.Query(`
+		SELECT notes.id, notes.title, notes.content, notes.created_at, notes.updated_at, categories.name, notes.category, users.username
+		FROM notes
+		LEFT JOIN categories ON notes.category = categories.id
+		LEFT JOIN users ON notes.user_id = users.id
+		WHERE notes.category = $1 AND (notes.title ILIKE '%' || $2 || '%' OR notes.content ILIKE '%' || $2 || '%')
+	`, categoryID, search)
 	if err != nil {
 		return nil, err
 	}
