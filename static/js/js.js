@@ -58,9 +58,6 @@ document.addEventListener("DOMContentLoaded", function () {
     // DOM elements
     const notesContainer = document.getElementById("notes-container");
     const createNoteBtn = document.getElementById("create-note-btn");
-    const createNoteBtnAllNotes = document.getElementById(
-        "create-note-btn-all-notes"
-    );
     const allNotesBtn = document.getElementById("all-notes-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const logoutBtnAllNotes = document.getElementById("logout-btn-all-notes");
@@ -71,15 +68,15 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     let searchQueryAllNotes = "";
 
-    const createNoteModal = new bootstrap.Modal(
-        document.getElementById("create-note-modal")
-    );
-    const editNoteModal = new bootstrap.Modal(
-        document.getElementById("edit-note-modal")
-    );
-    const deleteNoteModal = new bootstrap.Modal(
-        document.getElementById("delete-note-modal")
-    );
+    const createNoteModal = document.getElementById("create-note-modal")
+        ? new bootstrap.Modal(document.getElementById("create-note-modal"))
+        : null;
+    const editNoteModal = document.getElementById("edit-note-modal")
+        ? new bootstrap.Modal(document.getElementById("edit-note-modal"))
+        : null;
+    const deleteNoteModal = document.getElementById("delete-note-modal")
+        ? new bootstrap.Modal(document.getElementById("delete-note-modal"))
+        : null;
 
     // Form elements
     const createNoteForm = document.getElementById("create-note-form");
@@ -105,15 +102,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
+    if (categoryFilterSelect) {
+        categoryFilterSelect.addEventListener("change", filterByCategory);
+    }
+
+    if (categoryFilterSelectAllNotes) {
+        categoryFilterSelectAllNotes.addEventListener(
+            "change",
+            filterByCategoryAllNotes
+        );
+    }
+
     // Event listeners
     if (createNoteBtn) {
         createNoteBtn.addEventListener("click", () => createNoteModal.show());
-    }
-
-    if (createNoteBtnAllNotes) {
-        createNoteBtnAllNotes.addEventListener("click", () =>
-            createNoteModal.show()
-        );
     }
 
     if (createNoteForm) {
@@ -144,17 +146,6 @@ document.addEventListener("DOMContentLoaded", function () {
         allNotesBtn.addEventListener("click", () => {
             window.location.href = "/all-notes";
         });
-    }
-
-    if (categoryFilterSelect) {
-        categoryFilterSelect.addEventListener("change", filterByCategory);
-    }
-
-    if (categoryFilterSelectAllNotes) {
-        categoryFilterSelectAllNotes.addEventListener(
-            "change",
-            filterByCategoryAllNotes
-        );
     }
 
     if (searchInputMyNotes) {
@@ -314,10 +305,46 @@ document.addEventListener("DOMContentLoaded", function () {
             return;
         }
 
+        // Check current page
+        const currentPath = window.location.pathname;
+        const isHomePage = currentPath === "/home";
+        const showEditDeleteButtons = isHomePage;
+
         notes.forEach((note) => {
             console.log("Note:", note); // Debugging line
             const noteCard = document.createElement("div");
             noteCard.className = "col-md-4 mb-4";
+
+            // Generate action buttons HTML only if we're on the home page
+            const actionButtons = showEditDeleteButtons
+                ? `
+            <div>
+              <button class="btn btn-sm btn-outline-primary me-2 edit-note-btn" 
+                data-id="${note.id}" 
+                data-title="${escapeHtml(note.title)}" 
+                data-content="${escapeHtml(note.content)}"
+                data-category="${note.category_id}"
+                aria-label="Edit note">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                </svg>
+              </button>
+              <button class="btn btn-sm btn-outline-danger delete-note-btn" 
+                data-id="${note.id}" 
+                data-title="${escapeHtml(note.title)}"
+                aria-label="Delete note">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                  <line x1="10" y1="11" x2="10" y2="17"></line>
+                  <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+              </button>
+            </div>
+        `
+                : "";
+
             noteCard.innerHTML = `
             <div class="card h-100">
             <div class="card-header pb-2">
@@ -341,47 +368,26 @@ document.addEventListener("DOMContentLoaded", function () {
                       note.username
                   )}</span>
                 </div>
-                <div>
-                  <button class="btn btn-sm btn-outline-primary me-2 edit-note-btn" 
-                    data-id="${note.id}" 
-                    data-title="${escapeHtml(note.title)}" 
-                    data-content="${escapeHtml(note.content)}"
-                    data-category="${note.category_id}"
-                    aria-label="Edit note">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-edit">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                    </svg>
-                  </button>
-                  <button class="btn btn-sm btn-outline-danger delete-note-btn" 
-                    data-id="${note.id}" 
-                    data-title="${escapeHtml(note.title)}"
-                    aria-label="Delete note">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-trash-2">
-                      <polyline points="3 6 5 6 21 6"></polyline>
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                      <line x1="10" y1="11" x2="10" y2="17"></line>
-                      <line x1="14" y1="11" x2="14" y2="17"></line>
-                    </svg>
-                  </button>
-                </div>
+                ${actionButtons}
               </div>
             </div>
           </div>
-          
         `;
 
             notesContainer.appendChild(noteCard);
         });
 
-        // Add event listeners to edit and delete buttons
-        document.querySelectorAll(".edit-note-btn").forEach((btn) => {
-            btn.addEventListener("click", prepareEditNote);
-        });
+        // Only add event listeners if buttons are present (on home page)
+        if (showEditDeleteButtons) {
+            // Add event listeners to edit and delete buttons
+            document.querySelectorAll(".edit-note-btn").forEach((btn) => {
+                btn.addEventListener("click", prepareEditNote);
+            });
 
-        document.querySelectorAll(".delete-note-btn").forEach((btn) => {
-            btn.addEventListener("click", prepareDeleteNote);
-        });
+            document.querySelectorAll(".delete-note-btn").forEach((btn) => {
+                btn.addEventListener("click", prepareDeleteNote);
+            });
+        }
     }
 
     // Prepare edit note modal
