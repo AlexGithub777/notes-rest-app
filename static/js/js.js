@@ -40,12 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 })
                 .then((notes) => {
                     if (!notes || notes.length === 0) {
-                        showAlert("No notes found for your search.", "warning");
-
-                        // Clear the notes container
-                        notesContainer.innerHTML = "";
-
-                        return;
+                        notes = [];
                     }
                     renderNotes(notes);
                 })
@@ -299,12 +294,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .then((notes) => {
                 if (!notes || notes.length === 0) {
-                    showAlert("No notes found for your search.", "warning");
-
-                    // Clear the notes container
-                    notesContainer.innerHTML = "";
-
-                    return;
+                    notes = [];
                 }
                 renderNotes(notes);
             })
@@ -320,10 +310,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
         notesContainer.innerHTML = "";
 
-        if (notes.length === 0) {
+        if (notes.length === 0 || !Array.isArray(notes) || notes === null) {
             notesContainer.innerHTML = `
           <div class="col-12 text-center py-5">
-            <p class="text-muted">No notes found. Create your first note!</p>
+            <p class="text-muted">No notes found.</p>
           </div>
         `;
             return;
@@ -614,17 +604,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function filterByCategory() {
-        var categoryId = document.getElementById(
+        let categoryId = document.getElementById(
             "category-filter-my-notes"
         ).value;
 
-        // if categoryId is "all", dont add it to the url
         if (categoryId === "all") {
             categoryId = null;
         }
 
         const url = categoryId
-            ? `/api/notes?category-id=${categoryId}`
+            ? `/api/notes?category-id=${encodeURIComponent(categoryId)}`
             : `/api/notes`;
 
         fetch(url)
@@ -635,11 +624,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 return response.json();
             })
             .then((notes) => {
+                // if notes is null create an empty array
+                if (!notes || notes.length === 0) {
+                    notes = [];
+                }
                 renderNotes(notes);
             })
             .catch((error) => {
                 console.error("Error:", error);
-                showAlert("No notes found for this category.", "warning");
+                showAlert("Error fetching notes. Please try again.", "danger");
             });
     }
 
@@ -665,11 +658,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 return response.json();
             })
             .then((notes) => {
+                // if notes is null create an empty array
+                if (!notes || notes.length === 0) {
+                    notes = [];
+                }
                 renderNotes(notes);
             })
             .catch((error) => {
                 console.error("Error:", error);
-                showAlert("No notes found for this category.", "warning");
+                showAlert("Error fetching notes. Please try again.", "danger");
             });
     }
 });
