@@ -220,6 +220,7 @@ func GetAllNotesForAllUsers() ([]models.Note, error) {
 		FROM notes
 		LEFT JOIN categories ON notes.category = categories.id
 		LEFT JOIN users ON notes.user_id = users.id
+		ORDER BY notes.created_at DESC
 	`)
 	if err != nil {
 		return nil, err
