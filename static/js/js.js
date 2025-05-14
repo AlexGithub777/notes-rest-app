@@ -22,51 +22,53 @@ document.addEventListener("DOMContentLoaded", function () {
             if (query) {
                 url += `?search=${encodeURIComponent(query)}`;
             }
-        
+
             fetch(url)
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error("Failed to fetch notes");
-                }
-                return response.json();
-            })
-            .then((notes) => {
-                if (!notes || notes.length === 0) {
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error("Failed to fetch notes");
+                    }
+                    return response.json();
+                })
+                .then((notes) => {
+                    if (!notes || notes.length === 0) {
+                        showAlert("No notes found for your search.", "warning");
+
+                        // Clear the notes container
+                        notesContainer.innerHTML = "";
+
+                        return;
+                    }
+                    renderNotes(notes);
+                })
+                .catch((error) => {
+                    console.error("Error fetching notes:", error);
                     showAlert(
-                        "No notes found for your search.",
-                        "warning"
+                        "Error fetching notes. Please try again.",
+                        "danger"
                     );
-
-                    // Clear the notes container
-                    notesContainer.innerHTML = "";
-
-                    return;
-                }
-                renderNotes(notes);
-            })
-            .catch((error) => {
-                console.error("Error fetching notes:", error);
-                showAlert("Error fetching notes. Please try again.", "danger");
-            });
+                });
         }
         // Fetch all notes on page load
-        fetchAllNotes();      
+        fetchAllNotes();
     } else {
         document.title = "My Notes";
     }
 
-
-
     // DOM elements
     const notesContainer = document.getElementById("notes-container");
     const createNoteBtn = document.getElementById("create-note-btn");
-    const createNoteBtnAllNotes = document.getElementById("create-note-btn-all-notes");
+    const createNoteBtnAllNotes = document.getElementById(
+        "create-note-btn-all-notes"
+    );
     const allNotesBtn = document.getElementById("all-notes-btn");
     const logoutBtn = document.getElementById("logout-btn");
     const logoutBtnAllNotes = document.getElementById("logout-btn-all-notes");
     const searchInputMyNotes = document.getElementById("search-input-my-notes");
     let searchQueryMyNotes = "";
-    const searchInputAllNotes = document.getElementById("search-input-all-notes");
+    const searchInputAllNotes = document.getElementById(
+        "search-input-all-notes"
+    );
     let searchQueryAllNotes = "";
 
     const createNoteModal = new bootstrap.Modal(
@@ -89,9 +91,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const editNoteCategorySelect =
         document.getElementById("edit-note-category");
 
-    const categoryFilterSelect = document.getElementById("category-filter-my-notes");
-    const categoryFilterSelectAllNotes =
-        document.getElementById("category-filter-all-notes");
+    const categoryFilterSelect = document.getElementById(
+        "category-filter-my-notes"
+    );
+    const categoryFilterSelectAllNotes = document.getElementById(
+        "category-filter-all-notes"
+    );
 
     // Load notes and categories when page loads
     fetchCategories().then(() => {
@@ -100,14 +105,15 @@ document.addEventListener("DOMContentLoaded", function () {
         }
     });
 
-
     // Event listeners
     if (createNoteBtn) {
         createNoteBtn.addEventListener("click", () => createNoteModal.show());
     }
 
     if (createNoteBtnAllNotes) {
-        createNoteBtnAllNotes.addEventListener("click", () => createNoteModal.show());
+        createNoteBtnAllNotes.addEventListener("click", () =>
+            createNoteModal.show()
+        );
     }
 
     if (createNoteForm) {
@@ -145,21 +151,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (categoryFilterSelectAllNotes) {
-        categoryFilterSelectAllNotes.addEventListener("change", filterByCategoryAllNotes);
+        categoryFilterSelectAllNotes.addEventListener(
+            "change",
+            filterByCategoryAllNotes
+        );
     }
 
     if (searchInputMyNotes) {
-        searchInputMyNotes.addEventListener("input", debounce(() => {
-            searchQueryMyNotes = searchInputMyNotes.value.trim();
-            fetchNotes(searchQueryMyNotes);
-        }, 300));
+        searchInputMyNotes.addEventListener(
+            "input",
+            debounce(() => {
+                searchQueryMyNotes = searchInputMyNotes.value.trim();
+                fetchNotes(searchQueryMyNotes);
+            }, 300)
+        );
     }
-    
+
     if (searchInputAllNotes) {
-        searchInputAllNotes.addEventListener("input", debounce(() => {
-            searchQueryAllNotes = searchInputAllNotes.value.trim();
-            fetchAllNotes(searchQueryAllNotes);
-        }, 300));
+        searchInputAllNotes.addEventListener(
+            "input",
+            debounce(() => {
+                searchQueryAllNotes = searchInputAllNotes.value.trim();
+                fetchAllNotes(searchQueryAllNotes);
+            }, 300)
+        );
     }
 
     // debounce function – stops function from running too often (e.g. while typing)
@@ -175,7 +190,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }, delay);
         };
     }
-
 
     // Map category_id to Bootstrap badge classes
     function getCategoryBadgeClass(categoryId) {
@@ -215,49 +229,52 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Populate category select dropdowns
-function populateCategorySelects(categories) {
-    // Function to populate a select element with categories
-    function populateSelect(selectElement) {
-        if (!selectElement) return;
+    function populateCategorySelects(categories) {
+        // Function to populate a select element with categories
+        function populateSelect(selectElement) {
+            if (!selectElement) return;
 
-        // If selectElement is categoryFilterSelect or categoryFilterSelectAllNotes, add "All" option
-        if (selectElement === categoryFilterSelect || selectElement === categoryFilterSelectAllNotes) {
-            const allOption = document.createElement("option");
-            allOption.value = "";
-            allOption.textContent = "All Categories";
-            selectElement.appendChild(allOption);
-        } else {
-            // Set the default value to "Select a category"
-            const defaultOption = document.createElement("option");
-            defaultOption.value = "";
-            defaultOption.textContent = "Select a category";
-            selectElement.appendChild(defaultOption);
+            // If selectElement is categoryFilterSelect or categoryFilterSelectAllNotes, add "All" option
+            if (
+                selectElement === categoryFilterSelect ||
+                selectElement === categoryFilterSelectAllNotes
+            ) {
+                const allOption = document.createElement("option");
+                allOption.value = "";
+                allOption.textContent = "All Categories";
+                selectElement.appendChild(allOption);
+            } else {
+                // Set the default value to "Select a category"
+                const defaultOption = document.createElement("option");
+                defaultOption.value = "";
+                defaultOption.textContent = "Select a category";
+                selectElement.appendChild(defaultOption);
+            }
+
+            // Add categories from the API
+            categories.forEach((category) => {
+                category.id = parseInt(category.id, 10); // Ensure ID is an integer
+                const option = document.createElement("option");
+                option.value = category.id;
+                option.textContent = category.name;
+                selectElement.appendChild(option);
+            });
         }
 
-        // Add categories from the API
-        categories.forEach((category) => {
-            category.id = parseInt(category.id, 10); // Ensure ID is an integer
-            const option = document.createElement("option");
-            option.value = category.id;
-            option.textContent = category.name;
-            selectElement.appendChild(option);
-        });
+        // Populate select elements
+        populateSelect(createNoteCategorySelect);
+        populateSelect(editNoteCategorySelect);
+        populateSelect(categoryFilterSelect);
+        populateSelect(categoryFilterSelectAllNotes);
     }
 
-    // Populate select elements
-    populateSelect(createNoteCategorySelect);
-    populateSelect(editNoteCategorySelect);
-    populateSelect(categoryFilterSelect);
-    populateSelect(categoryFilterSelectAllNotes);
-}
- 
     // Fetch all notes from API
     function fetchNotes(query = "") {
         let url = API_URL;
         if (query) {
             url += `?search=${encodeURIComponent(query)}`;
         }
-    
+
         fetch(url)
             .then((response) => {
                 if (!response.ok) {
@@ -267,10 +284,7 @@ function populateCategorySelects(categories) {
             })
             .then((notes) => {
                 if (!notes || notes.length === 0) {
-                    showAlert(
-                        "No notes found for your search.",
-                        "warning"
-                    );
+                    showAlert("No notes found for your search.", "warning");
 
                     // Clear the notes container
                     notesContainer.innerHTML = "";
@@ -284,7 +298,6 @@ function populateCategorySelects(categories) {
                 showAlert("Error fetching notes. Please try again.", "danger");
             });
     }
-    
 
     // Render notes as Bootstrap cards
     function renderNotes(notes) {
@@ -575,12 +588,13 @@ function populateCategorySelects(categories) {
     }
 
     function filterByCategory() {
-        const categoryId =
-            document.getElementById("category-filter-my-notes").value;
+        const categoryId = document.getElementById(
+            "category-filter-my-notes"
+        ).value;
         const url = categoryId
             ? `/api/notes?category-id=${categoryId}`
             : `/api/notes`;
-    
+
         fetch(url)
             .then((response) => {
                 if (!response.ok) {
@@ -594,38 +608,32 @@ function populateCategorySelects(categories) {
             })
             .catch((error) => {
                 console.error("Error:", error);
-                showAlert(
-                    "No notes found for this category.",
-                    "warning"
-                );
+                showAlert("No notes found for this category.", "warning");
             });
     }
 
-    function filterByCategoryAllNotes () {
-        const categoryId =
-            document.getElementById("category-filter-all-notes").value;
+    function filterByCategoryAllNotes() {
+        const categoryId = document.getElementById(
+            "category-filter-all-notes"
+        ).value;
         const url = categoryId
             ? `/api/notes/all?category-id=${categoryId}`
             : `/api/notes/all`;
-    
+
         fetch(url)
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Failed to fetch notes");
                 }
-                return response.json(); // This is the key: expect JSON, not HTML
+                return response.json();
             })
             .then((notes) => {
                 console.log(notes);
-                renderNotes(notes); // Use your existing function
+                renderNotes(notes);
             })
             .catch((error) => {
                 console.error("Error:", error);
-                showAlert(
-                    "No notes found for this category.",
-                    "warning"
-                );
+                showAlert("No notes found for this category.", "warning");
             });
     }
 });
-
