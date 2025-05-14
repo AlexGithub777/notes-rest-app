@@ -28,7 +28,7 @@ func GetAllCategoriesHandler(c echo.Context) error {
 	return c.JSON(http.StatusOK, categories)
 }
 
-// GET /notes
+// GET /notes (for logged in user)
 func GetAllNotesHandler(c echo.Context) error {
 	// get user id from the cookie
 	cookie, err := c.Cookie("user_id")

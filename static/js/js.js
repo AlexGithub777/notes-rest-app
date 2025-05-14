@@ -17,10 +17,20 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
-        function fetchAllNotes(query = "") {
+        function fetchAllNotes(query = "", categoryId = null) {
             let url = `${API_URL}/all`;
+            let params = [];
+
             if (query) {
-                url += `?search=${encodeURIComponent(query)}`;
+                params.push(`search=${encodeURIComponent(query)}`);
+            }
+
+            if (categoryId && categoryId !== "all") {
+                params.push(`category-id=${encodeURIComponent(categoryId)}`);
+            }
+
+            if (params.length > 0) {
+                url += `?${params.join("&")}`;
             }
 
             fetch(url)
@@ -148,23 +158,29 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
+    function handleNoteSearchChange() {
+        searchQueryMyNotes = searchInputMyNotes.value.trim();
+        selectedCategoryId = categoryFilterSelect.value;
+        fetchNotes(searchQueryMyNotes, selectedCategoryId);
+    }
+
     if (searchInputMyNotes) {
         searchInputMyNotes.addEventListener(
             "input",
-            debounce(() => {
-                searchQueryMyNotes = searchInputMyNotes.value.trim();
-                fetchNotes(searchQueryMyNotes);
-            }, 300)
+            debounce(handleNoteSearchChange, 300)
         );
+    }
+
+    function handleNoteSearchChangeAllNotes() {
+        searchQueryAllNotes = searchInputAllNotes.value.trim();
+        selectedCategoryId = categoryFilterSelectAllNotes.value;
+        fetchAllNotes(searchQueryAllNotes, selectedCategoryId);
     }
 
     if (searchInputAllNotes) {
         searchInputAllNotes.addEventListener(
             "input",
-            debounce(() => {
-                searchQueryAllNotes = searchInputAllNotes.value.trim();
-                fetchAllNotes(searchQueryAllNotes);
-            }, 300)
+            debounce(handleNoteSearchChangeAllNotes, 300)
         );
     }
 
@@ -231,7 +247,7 @@ document.addEventListener("DOMContentLoaded", function () {
                 selectElement === categoryFilterSelectAllNotes
             ) {
                 const allOption = document.createElement("option");
-                allOption.value = "";
+                allOption.value = "all";
                 allOption.textContent = "All Categories";
                 selectElement.appendChild(allOption);
             } else {
@@ -260,10 +276,20 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     // Fetch all notes from API
-    function fetchNotes(query = "") {
+    function fetchNotes(query = "", categoryId = null) {
         let url = API_URL;
+        let params = [];
+
         if (query) {
-            url += `?search=${encodeURIComponent(query)}`;
+            params.push(`search=${encodeURIComponent(query)}`);
+        }
+
+        if (categoryId && categoryId !== "all") {
+            params.push(`category-id=${encodeURIComponent(categoryId)}`);
+        }
+
+        if (params.length > 0) {
+            url += `?${params.join("&")}`;
         }
 
         fetch(url)
@@ -594,9 +620,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function filterByCategory() {
-        const categoryId = document.getElementById(
+        var categoryId = document.getElementById(
             "category-filter-my-notes"
         ).value;
+
+        // if categoryId is "all", dont add it to the url
+        if (categoryId === "all") {
+            categoryId = null;
+        }
+
         const url = categoryId
             ? `/api/notes?category-id=${categoryId}`
             : `/api/notes`;
@@ -619,9 +651,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     function filterByCategoryAllNotes() {
-        const categoryId = document.getElementById(
+        var categoryId = document.getElementById(
             "category-filter-all-notes"
         ).value;
+
+        // if categoryId is "all", dont add it to the url
+        if (categoryId === "all") {
+            categoryId = null;
+        }
+
         const url = categoryId
             ? `/api/notes/all?category-id=${categoryId}`
             : `/api/notes/all`;
