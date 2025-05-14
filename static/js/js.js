@@ -1,5 +1,3 @@
-// notes.js - Vanilla JS implementation for Notes App with category support
-
 document.addEventListener("DOMContentLoaded", function () {
     // API endpoints
     const API_URL = "/api/notes";
@@ -241,7 +239,7 @@ document.addEventListener("DOMContentLoaded", function () {
         function populateSelect(selectElement) {
             if (!selectElement) return;
 
-            // If selectElement is categoryFilterSelect or categoryFilterSelectAllNotes, add "All" option
+            // If selectElement is categoryFilterSelect or categoryFilterSelectAllNotes, add "all" option
             if (
                 selectElement === categoryFilterSelect ||
                 selectElement === categoryFilterSelectAllNotes
@@ -337,7 +335,6 @@ document.addEventListener("DOMContentLoaded", function () {
         const showEditDeleteButtons = isHomePage;
 
         notes.forEach((note) => {
-            console.log("Note:", note); // Debugging line
             const noteCard = document.createElement("div");
             noteCard.className = "col-md-4 mb-4";
 
@@ -429,9 +426,6 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("edit-note-title").value = title;
         document.getElementById("edit-note-content").value = content;
         document.getElementById("edit-note-category").value = categoryId;
-
-        console.log("Category ID:", categoryId);
-        console.log("Selected Category:", editNoteCategorySelect.value);
 
         // Set the category if it exists
         if (editNoteCategorySelect && categoryId) {
@@ -569,10 +563,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!response.ok) {
                     throw new Error("Failed to delete note");
                 }
-                // Don't try to parse JSON when status is 204
+
                 deleteNoteModal.hide();
                 showAlert("Note deleted successfully!", "success");
-                fetchNotes(); // Reloads the page content (via JS)
+                fetchNotes();
             })
             .catch((error) => {
                 console.error("Error deleting note:", error);
@@ -638,11 +632,10 @@ document.addEventListener("DOMContentLoaded", function () {
                 if (!response.ok) {
                     throw new Error("Failed to fetch notes");
                 }
-                return response.json(); // This is the key: expect JSON, not HTML
-                console.log(response);
+                return response.json();
             })
             .then((notes) => {
-                renderNotes(notes); // Use your existing function
+                renderNotes(notes);
             })
             .catch((error) => {
                 console.error("Error:", error);
@@ -672,7 +665,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 return response.json();
             })
             .then((notes) => {
-                console.log(notes);
                 renderNotes(notes);
             })
             .catch((error) => {
